@@ -110,7 +110,8 @@ try {
 
     // Format conversation history for Gemini (excluding the message we just saved to handle manually in contents)
     $geminiContents = [];
-    foreach ($messages as $msg) {
+    $recentMessages = array_slice($messages, -8);
+    foreach ($recentMessages as $msg) {
         $role = ($msg['sender'] === 'user') ? 'user' : 'model';
         $geminiContents[] = [
             'role' => $role,
