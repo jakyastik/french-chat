@@ -103,10 +103,10 @@ $apiConfigured = (GEMINI_API_KEY !== 'YOUR_GEMINI_API_KEY_HERE' && !empty(GEMINI
             <!-- Sidebar Footer / Settings Panel -->
             <div class="sidebar-footer" style="display: flex; flex-direction: column; gap: 12px;">
                 <div class="api-config">
-                    <label for="api-key-input">Clé API Google Gemini</label>
+                    <label for="api-key-input">Google Gemini API Key</label>
                     <div class="api-input-group">
-                        <input type="password" id="api-key-input" class="api-input" placeholder="<?php echo $apiConfigured ? 'Configure in config.php' : 'Paste Gemini API Key...'; ?>">
-                        <button id="save-api-key-btn" class="btn btn-secondary btn-icon" title="Sauvegarder"><i data-lucide="save"></i></button>
+                        <input type="password" id="api-key-input" class="api-input" placeholder="<?php echo $apiConfigured ? 'Configured in config.php' : 'Paste Gemini API Key...'; ?>">
+                        <button id="save-api-key-btn" class="btn btn-secondary btn-icon" title="Save"><i data-lucide="save"></i></button>
                     </div>
                 </div>
                 
