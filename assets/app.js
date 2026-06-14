@@ -660,6 +660,7 @@ function appendMessage(msg) {
                 <div class="correction-title" style="display: flex; justify-content: space-between; align-items: center;">
                     <span style="display: inline-flex; align-items: center; gap: 6px;"><i data-lucide="info"></i> Correction :</span>
                     <div class="message-meta-actions">
+                        <button class="tts-button translate-correction-btn" title="Toggle Translation"><i data-lucide="languages"></i></button>
                         <button class="tts-button-correction" title="Listen corrected"><i data-lucide="volume-2"></i></button>
                         <button class="save-sentence-btn-correction" title="Save corrected sentence"><i data-lucide="star"></i></button>
                     </div>
@@ -674,7 +675,8 @@ function appendMessage(msg) {
         <div class="message-meta">
             <span>${senderName}</span>
             <div class="message-meta-actions">
-                <button class="tts-button" title="Listen"><i data-lucide="volume-2"></i></button>
+                <button class="tts-button translate-bubble-btn" title="Toggle Translation"><i data-lucide="languages"></i></button>
+                <button class="tts-button speak-bubble-btn" title="Listen"><i data-lucide="volume-2"></i></button>
                 <button class="save-sentence-btn" title="Save Sentence"><i data-lucide="star"></i></button>
             </div>
         </div>
@@ -684,8 +686,79 @@ function appendMessage(msg) {
         ${correctionHtml}
     `;
 
+    // Toggle translation for main message
+    const translateBtn = div.querySelector('.translate-bubble-btn');
+    if (translateBtn) {
+        translateBtn.addEventListener('click', async () => {
+            let translationDiv = div.querySelector('.message-translation');
+            if (!translationDiv) {
+                translationDiv = document.createElement('div');
+                translationDiv.className = 'message-translation';
+                translationDiv.style.cssText = 'font-size: 0.9em; opacity: 0.85; margin-top: 8px; padding-top: 8px; border-top: 1px dashed rgba(255,255,255,0.15);';
+                
+                if (msg.sender === 'user') {
+                    translationDiv.style.borderTopColor = 'rgba(255,255,255,0.2)';
+                } else {
+                    translationDiv.style.borderTopColor = 'var(--border-color, #e2e8f0)';
+                }
+                
+                translationDiv.innerHTML = '<em>Translating...</em>';
+                translationDiv.style.display = 'none';
+                div.querySelector('.message-content').after(translationDiv);
+            }
+
+            if (translationDiv.style.display === 'none' || translationDiv.style.display === '') {
+                translationDiv.style.display = 'block';
+                translateBtn.classList.add('active');
+                if (translationDiv.innerHTML === '<em>Translating...</em>') {
+                    try {
+                        const data = await apiFetch(`api/translate.php?word=${encodeURIComponent(msg.message)}&is_sentence=true`);
+                        translationDiv.textContent = data.translation;
+                    } catch (err) {
+                        translationDiv.innerHTML = '<span class="text-danger">Failed to translate.</span>';
+                    }
+                }
+            } else {
+                translationDiv.style.display = 'none';
+                translateBtn.classList.remove('active');
+            }
+        });
+    }
+
+    // Toggle translation for corrected message (if loaded in history)
+    const translateCorrectedBtn = div.querySelector('.translate-correction-btn');
+    if (translateCorrectedBtn) {
+        translateCorrectedBtn.addEventListener('click', async () => {
+            let translationDiv = div.querySelector('.corrected-translation');
+            if (!translationDiv) {
+                translationDiv = document.createElement('div');
+                translationDiv.className = 'corrected-translation';
+                translationDiv.style.cssText = 'font-size: 0.85em; opacity: 0.85; margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--border-color, #e2e8f0); color: var(--text-muted, #718096);';
+                translationDiv.innerHTML = '<em>Translating...</em>';
+                translationDiv.style.display = 'none';
+                div.querySelector('.corrected-phrase').after(translationDiv);
+            }
+
+            if (translationDiv.style.display === 'none' || translationDiv.style.display === '') {
+                translationDiv.style.display = 'block';
+                translateCorrectedBtn.classList.add('active');
+                if (translationDiv.innerHTML === '<em>Translating...</em>') {
+                    try {
+                        const data = await apiFetch(`api/translate.php?word=${encodeURIComponent(msg.corrected_message)}&is_sentence=true`);
+                        translationDiv.textContent = data.translation;
+                    } catch (err) {
+                        translationDiv.innerHTML = '<span class="text-danger">Failed to translate.</span>';
+                    }
+                }
+            } else {
+                translationDiv.style.display = 'none';
+                translateCorrectedBtn.classList.remove('active');
+            }
+        });
+    }
+
     // Dynamic click listener for speech synthesis
-    const ttsBtn = div.querySelector('.tts-button');
+    const ttsBtn = div.querySelector('.speak-bubble-btn');
     if (ttsBtn) {
         ttsBtn.addEventListener('click', () => {
             speakFrench(msg.message);
@@ -734,6 +807,7 @@ function updateUserMessageCorrection(tempId, finalMsg) {
             <div class="correction-title" style="display: flex; justify-content: space-between; align-items: center;">
                 <span style="display: inline-flex; align-items: center; gap: 6px;"><i data-lucide="info"></i> Correction :</span>
                 <div class="message-meta-actions">
+                    <button class="tts-button translate-correction-btn" title="Toggle Translation"><i data-lucide="languages"></i></button>
                     <button class="tts-button-correction" title="Listen corrected"><i data-lucide="volume-2"></i></button>
                     <button class="save-sentence-btn-correction" title="Save corrected sentence"><i data-lucide="star"></i></button>
                 </div>
@@ -744,6 +818,37 @@ function updateUserMessageCorrection(tempId, finalMsg) {
         el.appendChild(div);
         
         // Listeners for correction
+        const translateCorrectedBtn = div.querySelector('.translate-correction-btn');
+        if (translateCorrectedBtn) {
+            translateCorrectedBtn.addEventListener('click', async () => {
+                let translationDiv = div.querySelector('.corrected-translation');
+                if (!translationDiv) {
+                    translationDiv = document.createElement('div');
+                    translationDiv.className = 'corrected-translation';
+                    translationDiv.style.cssText = 'font-size: 0.85em; opacity: 0.85; margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--border-color, #e2e8f0); color: var(--text-muted, #718096);';
+                    translationDiv.innerHTML = '<em>Translating...</em>';
+                    translationDiv.style.display = 'none';
+                    div.querySelector('.corrected-phrase').after(translationDiv);
+                }
+
+                if (translationDiv.style.display === 'none' || translationDiv.style.display === '') {
+                    translationDiv.style.display = 'block';
+                    translateCorrectedBtn.classList.add('active');
+                    if (translationDiv.innerHTML === '<em>Translating...</em>') {
+                        try {
+                            const data = await apiFetch(`api/translate.php?word=${encodeURIComponent(finalMsg.corrected_message)}&is_sentence=true`);
+                            translationDiv.textContent = data.translation;
+                        } catch (err) {
+                            translationDiv.innerHTML = '<span class="text-danger">Failed to translate.</span>';
+                        }
+                    }
+                } else {
+                    translationDiv.style.display = 'none';
+                    translateCorrectedBtn.classList.remove('active');
+                }
+            });
+        }
+
         const ttsCorrectedBtn = div.querySelector('.tts-button-correction');
         if (ttsCorrectedBtn) {
             ttsCorrectedBtn.addEventListener('click', () => {
