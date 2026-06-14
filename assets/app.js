@@ -224,6 +224,9 @@ function initApiKey() {
 
 // 3. Setup event listeners
 function initEventListeners() {
+    // Text selection listener for vocabulary saving
+    setupTextSelectionListener();
+
     // Send message triggers
     const sendBtn = document.getElementById('send-btn');
     const chatInput = document.getElementById('chat-input');
@@ -1375,5 +1378,91 @@ function updateThemeIcon(theme) {
         if (window.lucide) {
             window.lucide.createIcons();
         }
+    }
+}
+
+// 14. Text Selection / Multi-word Vocabulary Saving logic
+let selectionTooltip = null;
+
+function setupTextSelectionListener() {
+    document.addEventListener('mouseup', handleTextSelection);
+}
+
+function handleTextSelection(e) {
+    setTimeout(() => {
+        const selection = window.getSelection();
+        const selectedText = selection.toString().trim();
+
+        if (!selectedText) {
+            hideSelectionTooltip();
+            return;
+        }
+
+        const anchorNode = selection.anchorNode;
+        if (!anchorNode) return;
+
+        const parentElement = anchorNode.parentElement;
+        const isWithinChat = parentElement.closest('.message-content') || parentElement.closest('.corrected-phrase');
+
+        if (!isWithinChat) {
+            hideSelectionTooltip();
+            return;
+        }
+
+        const range = selection.getRangeAt(0);
+        const rects = range.getClientRects();
+        if (rects.length === 0) return;
+        
+        const rect = rects[0];
+        showSelectionTooltip(rect, selectedText, parentElement.closest('.message-bubble')?.textContent || '');
+    }, 50);
+}
+
+function showSelectionTooltip(rect, selectedText, fullContext) {
+    if (!selectionTooltip) {
+        selectionTooltip = document.createElement('div');
+        selectionTooltip.className = 'selection-tooltip';
+        document.body.appendChild(selectionTooltip);
+    }
+
+    selectionTooltip.innerHTML = `
+        <span class="selection-text">"${selectedText}"</span>
+        <button class="selection-add-btn" title="Save to Vocabulary"><i data-lucide="plus" style="width: 14px; height: 14px;"></i> Save</button>
+    `;
+
+    const tooltipWidth = 180;
+    const left = rect.left + (rect.width / 2) - (tooltipWidth / 2);
+    const top = rect.top + window.scrollY - 40;
+
+    selectionTooltip.style.left = `${Math.max(10, left)}px`;
+    selectionTooltip.style.top = `${top}px`;
+    selectionTooltip.style.display = 'flex';
+
+    if (window.lucide) { window.lucide.createIcons({ node: selectionTooltip }); }
+
+    const saveBtn = selectionTooltip.querySelector('.selection-add-btn');
+    saveBtn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        saveBtn.disabled = true;
+        saveBtn.innerHTML = 'Saving...';
+        
+        try {
+            const data = await apiFetch(`api/translate.php?word=${encodeURIComponent(selectedText)}&is_sentence=true`);
+            const translation = data.translation;
+            
+            await addWordToVocab(selectedText, translation, fullContext.substring(0, 200).replace(/\s+/g, ' ').trim());
+            hideSelectionTooltip();
+        } catch (err) {
+            showToast(err.message, true);
+            saveBtn.disabled = false;
+            saveBtn.innerHTML = '<i data-lucide="plus" style="width: 14px; height: 14px;"></i> Save';
+            if (window.lucide) { window.lucide.createIcons({ node: saveBtn }); }
+        }
+    });
+}
+
+function hideSelectionTooltip() {
+    if (selectionTooltip) {
+        selectionTooltip.style.display = 'none';
     }
 }

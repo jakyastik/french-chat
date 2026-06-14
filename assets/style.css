@@ -874,6 +874,55 @@ main.main-content {
     color: var(--text-primary);
 }
 
+/* Selection Translation Tooltip */
+.selection-tooltip {
+    position: fixed;
+    background: var(--bg-sidebar);
+    border: 1px solid var(--border-color);
+    backdrop-filter: blur(8px);
+    padding: 6px 12px;
+    border-radius: 8px;
+    box-shadow: var(--card-shadow);
+    color: white;
+    z-index: 10001;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    pointer-events: auto;
+    animation: tooltipFade 0.15s cubic-bezier(0, 0, 0.2, 1);
+}
+
+.selection-text {
+    max-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.selection-add-btn {
+    background: var(--primary, #1a73e8);
+    border: none;
+    color: var(--bg-main, #ffffff);
+    padding: 4px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-weight: 600;
+    font-size: 12px;
+    transition: all 0.2s ease;
+}
+
+.selection-add-btn:hover {
+    opacity: 0.9;
+    transform: scale(1.02);
+}
+
+
 .tooltip-add-btn {
     background: var(--primary);
     border: none;
