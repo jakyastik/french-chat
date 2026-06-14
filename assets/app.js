@@ -1191,13 +1191,17 @@ function showToast(msg, isError = false) {
         padding: 10px 20px;
         border-radius: 8px;
         color: var(--bg-main);
-        font-size: 14px;
+        font-size: 13.5px;
         font-weight: 600;
         box-shadow: var(--card-shadow);
         background: ${isError ? '#ef4444' : 'var(--primary)'};
         border: 1px solid var(--border-color);
         animation: toastFade 0.25s cubic-bezier(0, 0, 0.2, 1);
         pointer-events: auto;
+        max-width: 450px;
+        text-align: center;
+        line-height: 1.4;
+        word-break: break-word;
     `;
     toast.innerText = msg;
     

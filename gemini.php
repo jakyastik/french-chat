@@ -82,8 +82,10 @@ function callGemini($prompt, $systemInstruction = null, $jsonSchema = null) {
     }
 
     if ($httpCode !== 200) {
-        $errorMsg = "API HTTP Error: {$httpCode}. Response: {$response}";
-        throw new Exception($errorMsg);
+        if ($httpCode === 429) {
+            throw new Exception("Gemini API Rate Limit / Quota Exceeded. Please wait a moment and try again.");
+        }
+        throw new Exception("Gemini API Error: HTTP {$httpCode}.");
     }
 
     $decoded = json_decode($response, true);
