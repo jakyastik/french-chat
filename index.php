@@ -87,15 +87,17 @@ $apiConfigured = (GEMINI_API_KEY !== 'YOUR_GEMINI_API_KEY_HERE' && !empty(GEMINI
 
                 <!-- Vocabulary Tab Panel -->
                 <div id="panel-vocab" class="sidebar-panel">
-                    <div id="vocab-list-container" class="vocab-list">
-                        <!-- Loaded dynamically -->
+                    <div class="sidebar-panel-placeholder" style="padding: 24px 16px; text-align: center; color: var(--text-secondary); font-size: 13px;">
+                        <i data-lucide="book-open" style="width: 24px; height: 24px; margin: 0 auto 8px auto; opacity: 0.6; display: block;"></i>
+                        <p style="margin: 0; line-height: 1.4;">Saved words are displayed in the main window.</p>
                     </div>
                 </div>
 
                 <!-- Sentences Tab Panel -->
                 <div id="panel-sentences" class="sidebar-panel">
-                    <div id="sentences-list-container" class="vocab-list">
-                        <!-- Loaded dynamically -->
+                    <div class="sidebar-panel-placeholder" style="padding: 24px 16px; text-align: center; color: var(--text-secondary); font-size: 13px;">
+                        <i data-lucide="star" style="width: 24px; height: 24px; margin: 0 auto 8px auto; opacity: 0.6; display: block;"></i>
+                        <p style="margin: 0; line-height: 1.4;">Saved sentences are displayed in the main window.</p>
                     </div>
                 </div>
             </div>
@@ -146,6 +148,11 @@ $apiConfigured = (GEMINI_API_KEY !== 'YOUR_GEMINI_API_KEY_HERE' && !empty(GEMINI
                             Topic: <span id="header-topic-name" style="font-weight: 600; color: var(--text-primary); margin-left: 6px;">General</span>
                         </div>
                     </div>
+                    
+                    <!-- Dashboard Header Text -->
+                    <div id="dashboard-header-title" style="display: none; align-items: center; gap: 8px;">
+                        <span id="dashboard-header-text" style="font-weight: 600; font-size: 16px; color: var(--text-primary);">Saved Words</span>
+                    </div>
                 </div>
                 
                 <div class="header-actions">
@@ -157,6 +164,40 @@ $apiConfigured = (GEMINI_API_KEY !== 'YOUR_GEMINI_API_KEY_HERE' && !empty(GEMINI
                     </button>
                 </div>
             </header>
+
+            <!-- Words Dashboard View -->
+            <div id="words-dashboard" class="vocab-dashboard" style="display: none; padding: 24px 32px; overflow-y: auto; height: calc(100vh - 73px);">
+                <div class="dashboard-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; gap: 16px; flex-wrap: wrap;">
+                    <div class="dashboard-title-group" style="display: flex; align-items: center; gap: 12px;">
+                        <h2 style="font-size: 20px; font-weight: 700; color: var(--text-primary); margin: 0;">Saved Words & Phrases</h2>
+                        <span id="words-count-badge" style="background: var(--primary); color: var(--bg-main); font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 20px;">0 words</span>
+                    </div>
+                    <div class="search-box" style="position: relative; width: 100%; max-width: 300px;">
+                        <i data-lucide="search" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; color: var(--text-secondary);"></i>
+                        <input type="text" id="words-search-input" placeholder="Search words..." style="width: 100%; padding: 8px 12px 8px 36px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary); outline: none; font-size: 13px;">
+                    </div>
+                </div>
+                <div id="words-grid" class="vocab-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px;">
+                    <!-- Populated dynamically -->
+                </div>
+            </div>
+
+            <!-- Sentences Dashboard View -->
+            <div id="sentences-dashboard" class="vocab-dashboard" style="display: none; padding: 24px 32px; overflow-y: auto; height: calc(100vh - 73px);">
+                <div class="dashboard-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; gap: 16px; flex-wrap: wrap;">
+                    <div class="dashboard-title-group" style="display: flex; align-items: center; gap: 12px;">
+                        <h2 style="font-size: 20px; font-weight: 700; color: var(--text-primary); margin: 0;">Saved Sentences</h2>
+                        <span id="sentences-count-badge" style="background: var(--primary); color: var(--bg-main); font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 20px;">0 sentences</span>
+                    </div>
+                    <div class="search-box" style="position: relative; width: 100%; max-width: 300px;">
+                        <i data-lucide="search" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; color: var(--text-secondary);"></i>
+                        <input type="text" id="sentences-search-input" placeholder="Search sentences..." style="width: 100%; padding: 8px 12px 8px 36px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary); outline: none; font-size: 13px;">
+                    </div>
+                </div>
+                <div id="sentences-grid" class="vocab-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px;">
+                    <!-- Populated dynamically -->
+                </div>
+            </div>
 
             <!-- Chat Window Content Area -->
             <div class="chat-window">

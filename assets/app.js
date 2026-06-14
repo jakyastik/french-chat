@@ -261,21 +261,20 @@ function initEventListeners() {
     const tabConvos = document.getElementById('tab-convos');
     const tabVocab = document.getElementById('tab-vocab');
     const tabSentences = document.getElementById('tab-sentences');
-    const panelConvos = document.getElementById('panel-convos');
-    const panelVocab = document.getElementById('panel-vocab');
-    const panelSentences = document.getElementById('panel-sentences');
 
-    const switchTab = (activeTab, activePanel) => {
-        [tabConvos, tabVocab, tabSentences].forEach(t => t && t.classList.remove('active'));
-        [panelConvos, panelVocab, panelSentences].forEach(p => p && p.classList.remove('active'));
-        
-        if (activeTab) activeTab.classList.add('active');
-        if (activePanel) activePanel.classList.add('active');
-    };
+    if (tabConvos) tabConvos.addEventListener('click', () => setView('chat'));
+    if (tabVocab) tabVocab.addEventListener('click', () => setView('words'));
+    if (tabSentences) tabSentences.addEventListener('click', () => setView('sentences'));
 
-    if (tabConvos) tabConvos.addEventListener('click', () => switchTab(tabConvos, panelConvos));
-    if (tabVocab) tabVocab.addEventListener('click', () => switchTab(tabVocab, panelVocab));
-    if (tabSentences) tabSentences.addEventListener('click', () => switchTab(tabSentences, panelSentences));
+    // Search inputs for Vocabulary Dashboards
+    const wordsSearch = document.getElementById('words-search-input');
+    if (wordsSearch) {
+        wordsSearch.addEventListener('input', renderVocabulary);
+    }
+    const sentencesSearch = document.getElementById('sentences-search-input');
+    if (sentencesSearch) {
+        sentencesSearch.addEventListener('input', renderSentences);
+    }
 
     // New Chat Button
     const newChatBtn = document.getElementById('new-chat-btn');
@@ -1040,26 +1039,82 @@ async function deleteVocabWord(id) {
 }
 
 function renderVocabulary() {
-    const container = document.getElementById('vocab-list-container');
+    const container = document.getElementById('words-grid');
+    const badge = document.getElementById('words-count-badge');
     if (!container) return;
 
-    if (state.vocabList.length === 0) {
-        container.innerHTML = '<div class="text-center p-4 text-secondary text-sm">No words saved yet. Hover over French words in the chat to translate and save them!</div>';
+    const query = (document.getElementById('words-search-input')?.value || '').toLowerCase().trim();
+    const filteredVocab = state.vocabList.filter(item => 
+        item.word.toLowerCase().includes(query) || 
+        (item.translation && item.translation.toLowerCase().includes(query)) ||
+        (item.context && item.context.toLowerCase().includes(query))
+    );
+
+    if (badge) {
+        badge.textContent = `${filteredVocab.length} word${filteredVocab.length === 1 ? '' : 's'}`;
+    }
+
+    if (filteredVocab.length === 0) {
+        if (query) {
+            container.innerHTML = '<div class="text-center p-8 text-secondary text-sm" style="grid-column: 1/-1;">No matching words found.</div>';
+        } else {
+            container.innerHTML = '<div class="text-center p-8 text-secondary text-sm" style="grid-column: 1/-1;">No words saved yet. Highlight or hover over French words in the chat to translate and save them!</div>';
+        }
         return;
     }
 
-    container.innerHTML = state.vocabList.map(item => `
-        <div class="vocab-item">
-            <div class="vocab-header">
-                <span class="vocab-word">${escapeHtml(item.word)}</span>
-                <span class="vocab-translation">${escapeHtml(item.translation)}</span>
+    container.innerHTML = filteredVocab.map((item, idx) => {
+        return `
+            <div class="vocab-card" data-idx="${idx}">
+                <div class="vocab-card-header">
+                    <h3 class="vocab-card-word">${escapeHtml(item.word)}</h3>
+                    <button class="vocab-card-delete-btn delete-btn-word" data-id="${item.id}" title="Remove word"><i data-lucide="trash-2" style="width: 16px; height: 16px;"></i></button>
+                </div>
+                <div class="vocab-card-translation-container">
+                    <button class="vocab-card-reveal-btn reveal-btn" style="display: flex; align-items: center; gap: 4px;"><i data-lucide="eye" style="width: 14px; height: 14px;"></i> Show Translation</button>
+                    <span class="vocab-card-translation" style="display: none;">${escapeHtml(item.translation)}</span>
+                </div>
+                ${item.context ? `<p class="vocab-card-context">${tokenizeFrenchText(item.context)}</p>` : ''}
+                <div class="vocab-card-actions">
+                    <button class="vocab-card-speak-btn speak-btn-word" data-word="${escapeHtml(item.word)}" title="Listen"><i data-lucide="volume-2" style="width: 16px; height: 16px;"></i></button>
+                </div>
             </div>
-            ${item.context ? `<div class="vocab-context">"${escapeHtml(item.context)}"</div>` : ''}
-            <button class="vocab-delete" onclick="deleteVocabWord('${item.id}')" title="Delete word"><i data-lucide="trash-2"></i></button>
-        </div>
-    `).join('');
+        `;
+    }).join('');
 
-    if (window.lucide) { window.lucide.createIcons(); }
+    if (window.lucide) { window.lucide.createIcons({ node: container }); }
+
+    container.querySelectorAll('.delete-btn-word').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const id = btn.dataset.id;
+            deleteVocabWord(id);
+        });
+    });
+
+    container.querySelectorAll('.speak-btn-word').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const w = btn.dataset.word;
+            speakFrench(w);
+        });
+    });
+
+    container.querySelectorAll('.reveal-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const container = btn.closest('.vocab-card-translation-container');
+            const translationEl = container.querySelector('.vocab-card-translation');
+            if (translationEl) {
+                if (translationEl.style.display === 'none') {
+                    translationEl.style.display = 'block';
+                    btn.style.display = 'none';
+                }
+            }
+        });
+    });
+
+    setupWordHoverEvents(container);
 }
 
 // 14.5. Model Sentence Manager
@@ -1108,50 +1163,81 @@ async function deleteSentence(id) {
 }
 
 function renderSentences() {
-    const container = document.getElementById('sentences-list-container');
+    const container = document.getElementById('sentences-grid');
+    const badge = document.getElementById('sentences-count-badge');
     if (!container) return;
 
-    if (!state.sentencesList || state.sentencesList.length === 0) {
-        container.innerHTML = '<div class="text-center p-4 text-secondary text-sm">Aucune phrase sauvegardée. Cliquez sur l\'icône d\'étoile à côté de n\'importe quelle phrase pour la sauvegarder comme phrase modèle !</div>';
+    const query = (document.getElementById('sentences-search-input')?.value || '').toLowerCase().trim();
+    const filteredSentences = (state.sentencesList || []).filter(item => 
+        item.sentence.toLowerCase().includes(query) || 
+        (item.translation && item.translation.toLowerCase().includes(query))
+    );
+
+    if (badge) {
+        badge.textContent = `${filteredSentences.length} sentence${filteredSentences.length === 1 ? '' : 's'}`;
+    }
+
+    if (filteredSentences.length === 0) {
+        if (query) {
+            container.innerHTML = '<div class="text-center p-8 text-secondary text-sm" style="grid-column: 1/-1;">No matching sentences found.</div>';
+        } else {
+            container.innerHTML = '<div class="text-center p-8 text-secondary text-sm" style="grid-column: 1/-1;">No sentences saved yet. Click the star icon next to any sentence in the chat to save it!</div>';
+        }
         return;
     }
 
-    container.innerHTML = state.sentencesList.map((item, idx) => {
+    container.innerHTML = filteredSentences.map((item, idx) => {
         const tokenized = tokenizeFrenchText(item.sentence);
         return `
-            <div class="vocab-item" data-idx="${idx}">
-                <div class="vocab-header" style="flex-direction: column; align-items: flex-start; gap: 4px;">
-                    <span class="vocab-word" style="font-size: 14px; font-weight: 500; line-height: 1.4; color: var(--text-primary); text-align: left;">${tokenized}</span>
-                    <span class="vocab-translation" style="font-size: 13px; font-weight: 400; color: var(--text-secondary); text-align: left;">${escapeHtml(item.translation)}</span>
+            <div class="vocab-card sentence-card" data-idx="${idx}">
+                <div class="vocab-card-header">
+                    <div class="vocab-card-word sentence-text">${tokenized}</div>
+                    <button class="vocab-card-delete-btn delete-btn-sentence" data-id="${item.id}" title="Remove sentence"><i data-lucide="trash-2" style="width: 16px; height: 16px;"></i></button>
                 </div>
-                <div style="display: flex; gap: 8px; margin-top: 8px; justify-content: flex-end; width: 100%;">
-                    <button class="btn-icon tts-btn-sentence" title="Listen" style="padding: 2px 6px;"><i data-lucide="volume-2"></i></button>
-                    <button class="btn-icon delete-btn-sentence" title="Delete sentence" style="padding: 2px 6px;"><i data-lucide="trash-2"></i></button>
+                <div class="vocab-card-translation-container">
+                    <button class="vocab-card-reveal-btn reveal-btn" style="display: flex; align-items: center; gap: 4px;"><i data-lucide="eye" style="width: 14px; height: 14px;"></i> Show Translation</button>
+                    <span class="vocab-card-translation" style="display: none;">${escapeHtml(item.translation)}</span>
+                </div>
+                <div class="vocab-card-actions">
+                    <button class="vocab-card-speak-btn speak-btn-sentence" data-sentence="${escapeHtml(item.sentence)}" title="Listen"><i data-lucide="volume-2" style="width: 16px; height: 16px;"></i></button>
                 </div>
             </div>
         `;
     }).join('');
 
-    // Dynamically bind listeners to avoid quote escaping issues
-    container.querySelectorAll('.vocab-item').forEach(el => {
-        const idx = el.dataset.idx;
-        const item = state.sentencesList[idx];
-        if (!item) return;
+    if (window.lucide) { window.lucide.createIcons({ node: container }); }
 
-        const ttsBtn = el.querySelector('.tts-btn-sentence');
-        if (ttsBtn) {
-            ttsBtn.addEventListener('click', () => speakFrench(item.sentence));
-        }
-
-        const deleteBtn = el.querySelector('.delete-btn-sentence');
-        if (deleteBtn) {
-            deleteBtn.addEventListener('click', () => deleteSentence(item.id));
-        }
+    container.querySelectorAll('.delete-btn-sentence').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const id = btn.dataset.id;
+            deleteSentence(id);
+        });
     });
-    
-    // Wire hover event listeners for words in the sentences list container
+
+    container.querySelectorAll('.speak-btn-sentence').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const s = btn.dataset.sentence;
+            speakFrench(s);
+        });
+    });
+
+    container.querySelectorAll('.reveal-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const container = btn.closest('.vocab-card-translation-container');
+            const translationEl = container.querySelector('.vocab-card-translation');
+            if (translationEl) {
+                if (translationEl.style.display === 'none') {
+                    translationEl.style.display = 'block';
+                    btn.style.display = 'none';
+                }
+            }
+        });
+    });
+
     setupWordHoverEvents(container);
-    if (window.lucide) { window.lucide.createIcons(); }
 }
 
 // 15. Cinematic Conversation Replay Mode
@@ -1246,6 +1332,7 @@ function advanceReplayStep() {
 
 // 16. UI Toggle Helpers
 function showWelcomeScreen() {
+    setView('chat');
     state.activeConversationId = null;
     renderConversations(); // clear active selection
     document.querySelectorAll('.diff-card').forEach(c => c.classList.remove('active'));
@@ -1259,6 +1346,7 @@ function showWelcomeScreen() {
 }
 
 function showChatWindow() {
+    setView('chat');
     document.getElementById('welcome-screen').style.display = 'none';
     document.getElementById('chat-window-content').style.display = 'flex';
     document.getElementById('main-header-content').style.display = 'flex';
@@ -1464,5 +1552,80 @@ function showSelectionTooltip(rect, selectedText, fullContext) {
 function hideSelectionTooltip() {
     if (selectionTooltip) {
         selectionTooltip.style.display = 'none';
+    }
+}
+
+// 17. View Navigation Logic (Switching between Chat, Words Dashboard, and Sentences Dashboard)
+function setView(viewName) {
+    const tabConvos = document.getElementById('tab-convos');
+    const tabVocab = document.getElementById('tab-vocab');
+    const tabSentences = document.getElementById('tab-sentences');
+    const panelConvos = document.getElementById('panel-convos');
+    const panelVocab = document.getElementById('panel-vocab');
+    const panelSentences = document.getElementById('panel-sentences');
+
+    const chatWindow = document.querySelector('.chat-window');
+    const chatInputContainer = document.getElementById('chat-input-container');
+    const wordsDashboard = document.getElementById('words-dashboard');
+    const sentencesDashboard = document.getElementById('sentences-dashboard');
+    const mainHeaderContent = document.getElementById('main-header-content');
+    const dashboardHeaderTitle = document.getElementById('dashboard-header-title');
+    const dashboardHeaderText = document.getElementById('dashboard-header-text');
+    const replayBtn = document.getElementById('replay-btn');
+
+    // Remove active class from tabs & panels
+    [tabConvos, tabVocab, tabSentences].forEach(t => t && t.classList.remove('active'));
+    [panelConvos, panelVocab, panelSentences].forEach(p => p && p.classList.remove('active'));
+
+    if (viewName === 'chat') {
+        if (tabConvos) tabConvos.classList.add('active');
+        if (panelConvos) panelConvos.classList.add('active');
+
+        if (chatWindow) chatWindow.style.display = 'block';
+        if (wordsDashboard) wordsDashboard.style.display = 'none';
+        if (sentencesDashboard) sentencesDashboard.style.display = 'none';
+        if (dashboardHeaderTitle) dashboardHeaderTitle.style.display = 'none';
+        
+        if (state.activeConversationId) {
+            if (chatInputContainer) chatInputContainer.style.display = 'block';
+            if (mainHeaderContent) mainHeaderContent.style.display = 'flex';
+            if (replayBtn) replayBtn.style.display = 'inline-flex';
+        } else {
+            if (chatInputContainer) chatInputContainer.style.display = 'none';
+            if (mainHeaderContent) mainHeaderContent.style.display = 'none';
+            if (replayBtn) replayBtn.style.display = 'none';
+        }
+    } else if (viewName === 'words') {
+        if (tabVocab) tabVocab.classList.add('active');
+        if (panelVocab) panelVocab.classList.add('active');
+
+        if (chatWindow) chatWindow.style.display = 'none';
+        if (chatInputContainer) chatInputContainer.style.display = 'none';
+        if (wordsDashboard) wordsDashboard.style.display = 'block';
+        if (sentencesDashboard) sentencesDashboard.style.display = 'none';
+        
+        if (mainHeaderContent) mainHeaderContent.style.display = 'none';
+        if (replayBtn) replayBtn.style.display = 'none';
+        if (dashboardHeaderTitle) {
+            dashboardHeaderTitle.style.display = 'flex';
+            if (dashboardHeaderText) dashboardHeaderText.textContent = 'Vocabulary / Words';
+        }
+        renderVocabulary();
+    } else if (viewName === 'sentences') {
+        if (tabSentences) tabSentences.classList.add('active');
+        if (panelSentences) panelSentences.classList.add('active');
+
+        if (chatWindow) chatWindow.style.display = 'none';
+        if (chatInputContainer) chatInputContainer.style.display = 'none';
+        if (wordsDashboard) wordsDashboard.style.display = 'none';
+        if (sentencesDashboard) sentencesDashboard.style.display = 'block';
+        
+        if (mainHeaderContent) mainHeaderContent.style.display = 'none';
+        if (replayBtn) replayBtn.style.display = 'none';
+        if (dashboardHeaderTitle) {
+            dashboardHeaderTitle.style.display = 'flex';
+            if (dashboardHeaderText) dashboardHeaderText.textContent = 'Vocabulary / Sentences';
+        }
+        renderSentences();
     }
 }
