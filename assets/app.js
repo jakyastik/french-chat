@@ -423,6 +423,8 @@ function renderConversations() {
 
 // 6. Start a New Conversation
 async function startNewConversation(difficulty, topic = 'General') {
+    const startChatBtn = document.getElementById('start-chat-btn');
+    if (startChatBtn) startChatBtn.disabled = true;
     try {
         const res = await apiFetch('api/history.php?action=create', {
             method: 'POST',
@@ -453,6 +455,8 @@ async function startNewConversation(difficulty, topic = 'General') {
     } catch (err) {
         removeBotLoadingBubble();
         showToast(err.message, true);
+    } finally {
+        if (startChatBtn) startChatBtn.disabled = false;
     }
 }
 
@@ -523,8 +527,13 @@ async function deleteConversation(event, id) {
 // 9. Send Chat Message
 async function handleSendMessage() {
     const chatInput = document.getElementById('chat-input');
+    const sendBtn = document.getElementById('send-btn');
     const text = chatInput.value.trim();
     if (!text || !state.activeConversationId) return;
+
+    // Disable input and button to prevent double submission
+    chatInput.disabled = true;
+    if (sendBtn) sendBtn.disabled = true;
 
     // Clear input and auto-resize
     chatInput.value = '';
@@ -569,6 +578,11 @@ async function handleSendMessage() {
     } catch (err) {
         removeBotLoadingBubble();
         showToast(err.message, true);
+    } finally {
+        // Re-enable input and button
+        chatInput.disabled = false;
+        if (sendBtn) sendBtn.disabled = false;
+        chatInput.focus();
     }
 }
 
