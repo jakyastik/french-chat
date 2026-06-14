@@ -1,0 +1,7 @@
+# Local configuration containing credentials
+config.php
+
+# Local SQLite databases
+db/
+database/
+*.db
